@@ -1,7 +1,6 @@
-const { Client, GatewayIntentBits, SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, REST, Routes } = require('discord.js');
+const { Client, GatewayIntentBits, SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, REST, Routes, ChannelType } = require('discord.js');
 const express = require('express');
 
-// 1. خادم الويب (مطلوب لكي ترصد منصة Render البورت وتعتبر الخدمة شغالة)
 const app = express();
 const PORT = process.env.PORT || 10000;
 
@@ -13,7 +12,6 @@ app.listen(PORT, '0.0.0.0', () => {
     console.log(`Web server is running and listening on port ${PORT}`);
 });
 
-// 2. إعداد بوت الديسكورد
 const client = new Client({
     intents: [GatewayIntentBits.Guilds]
 });
@@ -40,7 +38,6 @@ client.once('clientReady', async () => {
     const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
 
     try {
-        console.log('Started refreshing application (/) commands.');
         await rest.put(
             Routes.applicationCommands(client.user.id),
             { body: commands },
@@ -66,6 +63,9 @@ client.on('interactionCreate', async interaction => {
             let updatedCount = 0;
 
             for (const [id, channel] of channels) {
+                // استثناء الفئات (Categories) لكي لا يحسبها البوت قناة وهمية
+                if (!channel || channel.type === ChannelType.GuildCategory) continue;
+
                 try {
                     await channel.permissionOverwrites.edit(everyoneRole, {
                         ViewChannel: action === 'on' ? false : null
