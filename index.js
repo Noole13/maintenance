@@ -16,8 +16,11 @@ const client = new Client({
     intents: [GatewayIntentBits.Guilds]
 });
 
-// معرف قناة الصيانة الثابت الذي طلبته
+// معرف قناة الصيانة الثابت
 const MAINTENANCE_CHANNEL_ID = '1550318085146288249';
+
+// رابط الشعار المباشر من ملفات المستودع لديك على GitHub
+const SERVER_LOGO_URL = 'https://raw.githubusercontent.com/Noole13/maintenance/main/Gemini.png';
 
 client.once('clientReady', async () => {
     console.log(`Logged in as ${client.user.tag}!`);
@@ -71,19 +74,16 @@ client.on('interactionCreate', async interaction => {
                 try {
                     if (action === 'on') {
                         if (channel.id === MAINTENANCE_CHANNEL_ID) {
-                            // إبقاء قناة الصيانة مرئية ومغلقة للكتابة
                             await channel.permissionOverwrites.edit(everyoneRole, {
                                 ViewChannel: true,
                                 SendMessages: false
                             });
                         } else {
-                            // إخفاء باقي القنوات
                             await channel.permissionOverwrites.edit(everyoneRole, {
                                 ViewChannel: false
                             });
                         }
                     } else {
-                        // إرجاع الصلاحيات لطبيعتها عند إيقاف الصيانة
                         await channel.permissionOverwrites.edit(everyoneRole, {
                             ViewChannel: null,
                             SendMessages: null
@@ -94,7 +94,7 @@ client.on('interactionCreate', async interaction => {
                 }
             }
 
-            // إرسال الرسالة المناسبة في قناة الصيانة الثابتة
+            // إرسال الرسالة مع الشعار الرسمي في الإيمبد داخل قناة الصيانة
             if (targetChannel) {
                 if (action === 'on') {
                     const maintenanceEmbed = new EmbedBuilder()
@@ -102,12 +102,14 @@ client.on('interactionCreate', async interaction => {
                         .setTitle('🛠️ سيرفر [ 3RB ] تحت الصيانة حالياً')
                         .setDescription(
                             '**عزيزي العضو،**\n\n' +
-                            'نعمل حالياً على إجراء أعمال صيانة وتحديثات شاملة للسيرفر.\n' +
-                            'تم إخفاء القنوات مؤقتاً لضمان استقرار العمل، وستتم إعادتها قريباً.\n\n' +
+                            'نعمل حالياً على إجراء أعمال صيانة وتحديثات شاملة للسيرفر لتقديم أفضل تجربة.\n' +
+                            'تم إخفاء القنوات مؤقتاً، وستتم إعادتها فور الانتهاء.\n\n' +
                             '_شكراً لصبركم وتفهمكم._'
                         )
+                        .setThumbnail(SERVER_LOGO_URL) // شعار السيرفر كصورة مصغرة
+                        .setImage(SERVER_LOGO_URL)    // شعار السيرفر كصورة رئيسية بارزة
                         .setTimestamp()
-                        .setFooter({ text: '3RB Maintenance System' });
+                        .setFooter({ text: '3RB Maintenance System', iconURL: SERVER_LOGO_URL });
 
                     await targetChannel.send({ embeds: [maintenanceEmbed] });
                 } else {
@@ -119,8 +121,10 @@ client.on('interactionCreate', async interaction => {
                             'تمت إعادة جميع القنوات والخدمات للعمل بشكل طبيعي.\n' +
                             'نتمنى لكم وقتاً ممتعاً في السيرفر.'
                         )
+                        .setThumbnail(SERVER_LOGO_URL)
+                        .setImage(SERVER_LOGO_URL)
                         .setTimestamp()
-                        .setFooter({ text: '3RB Maintenance System' });
+                        .setFooter({ text: '3RB Maintenance System', iconURL: SERVER_LOGO_URL });
 
                     await targetChannel.send({ embeds: [backEmbed] });
                 }
@@ -129,7 +133,7 @@ client.on('interactionCreate', async interaction => {
             const replyEmbed = new EmbedBuilder()
                 .setColor(action === 'on' ? '#FF0000' : '#00FF00')
                 .setTitle(action === 'on' ? '🛠️ تم تفعيل وضع الصيانة بنجاح' : '✅ تم إيقاف وضع الصيانة')
-                .setDescription(action === 'on' ? 'تم إخفاء القنوات وإرسال إشعار الصيانة تلقائياً.' : 'تمت إعادة القنوات وإرسال إشعار العودة تلقائياً.')
+                .setDescription(action === 'on' ? 'تم إخفاء القنوات وإرسال إشعار الصيانة بالشعار.' : 'تمت إعادة القنوات وإرسال إشعار العودة.')
                 .setTimestamp();
 
             await interaction.editReply({ embeds: [replyEmbed] });
