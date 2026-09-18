@@ -16,20 +16,23 @@ const client = new Client({
     intents: [GatewayIntentBits.Guilds]
 });
 
+// معرف قناة الصيانة الثابت الذي طلبته
+const MAINTENANCE_CHANNEL_ID = '1550318085146288249';
+
 client.once('clientReady', async () => {
     console.log(`Logged in as ${client.user.tag}!`);
 
     const commands = [
         new SlashCommandBuilder()
             .setName('maintenance')
-            .setDescription('وضع الصيانة: إخفاء أو إظهار جميع القنوات للأعضاء')
+            .setDescription('إدارة وضع الصيانة للسيرفر')
             .addStringOption(option =>
                 option.setName('action')
                     .setDescription('اختر الحالة')
                     .setRequired(true)
                     .addChoices(
-                        { name: 'تشغيل (إخفاء القنوات)', value: 'on' },
-                        { name: 'إيقاف (إعادة القنوات)', value: 'off' }
+                        { name: 'تشغيل (إخفاء السيرفر وإشعار الصيانة)', value: 'on' },
+                        { name: 'إيقاف (إعادة القنوات وإشعار العودة)', value: 'off' }
                     )
             )
             .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
@@ -60,37 +63,80 @@ client.on('interactionCreate', async interaction => {
 
         try {
             const channels = await guild.channels.fetch();
-            let updatedCount = 0;
+            const targetChannel = channels.get(MAINTENANCE_CHANNEL_ID);
 
             for (const [id, channel] of channels) {
-                // استثناء الفئات (Categories) لكي لا يحسبها البوت قناة وهمية
                 if (!channel || channel.type === ChannelType.GuildCategory) continue;
 
                 try {
-                    await channel.permissionOverwrites.edit(everyoneRole, {
-                        ViewChannel: action === 'on' ? false : null
-                    });
-                    updatedCount++;
+                    if (action === 'on') {
+                        if (channel.id === MAINTENANCE_CHANNEL_ID) {
+                            // إبقاء قناة الصيانة مرئية ومغلقة للكتابة
+                            await channel.permissionOverwrites.edit(everyoneRole, {
+                                ViewChannel: true,
+                                SendMessages: false
+                            });
+                        } else {
+                            // إخفاء باقي القنوات
+                            await channel.permissionOverwrites.edit(everyoneRole, {
+                                ViewChannel: false
+                            });
+                        }
+                    } else {
+                        // إرجاع الصلاحيات لطبيعتها عند إيقاف الصيانة
+                        await channel.permissionOverwrites.edit(everyoneRole, {
+                            ViewChannel: null,
+                            SendMessages: null
+                        });
+                    }
                 } catch (err) {
                     console.error(`فشل تعديل صلاحيات القناة ${channel.name}:`, err);
                 }
             }
 
-            const embed = new EmbedBuilder()
+            // إرسال الرسالة المناسبة في قناة الصيانة الثابتة
+            if (targetChannel) {
+                if (action === 'on') {
+                    const maintenanceEmbed = new EmbedBuilder()
+                        .setColor('#FFCC00')
+                        .setTitle('🛠️ سيرفر [ 3RB ] تحت الصيانة حالياً')
+                        .setDescription(
+                            '**عزيزي العضو،**\n\n' +
+                            'نعمل حالياً على إجراء أعمال صيانة وتحديثات شاملة للسيرفر.\n' +
+                            'تم إخفاء القنوات مؤقتاً لضمان استقرار العمل، وستتم إعادتها قريباً.\n\n' +
+                            '_شكراً لصبركم وتفهمكم._'
+                        )
+                        .setTimestamp()
+                        .setFooter({ text: '3RB Maintenance System' });
+
+                    await targetChannel.send({ embeds: [maintenanceEmbed] });
+                } else {
+                    const backEmbed = new EmbedBuilder()
+                        .setColor('#00FF00')
+                        .setTitle('✅ انتهت أعمال الصيانة في سيرفر [ 3RB ]')
+                        .setDescription(
+                            '**يسعدنا إعلامكم أنه تم الانتهاء من الصيانة بنجاح!** 🎉\n\n' +
+                            'تمت إعادة جميع القنوات والخدمات للعمل بشكل طبيعي.\n' +
+                            'نتمنى لكم وقتاً ممتعاً في السيرفر.'
+                        )
+                        .setTimestamp()
+                        .setFooter({ text: '3RB Maintenance System' });
+
+                    await targetChannel.send({ embeds: [backEmbed] });
+                }
+            }
+
+            const replyEmbed = new EmbedBuilder()
                 .setColor(action === 'on' ? '#FF0000' : '#00FF00')
-                .setTitle(action === 'on' ? '🛠️ تم تفعيل وضع الصيانة' : '✅ تم إيقاف وضع الصيانة')
-                .setDescription(
-                    action === 'on'
-                        ? `تم إخفاء القنوات بنجاح عن الأعضاء في **${updatedCount}** قناة.`
-                        : `تمت إعادة إظهار القنوات للأعضاء في **${updatedCount}** قناة.`
-                )
+                .setTitle(action === 'on' ? '🛠️ تم تفعيل وضع الصيانة بنجاح' : '✅ تم إيقاف وضع الصيانة')
+                .setDescription(action === 'on' ? 'تم إخفاء القنوات وإرسال إشعار الصيانة تلقائياً.' : 'تمت إعادة القنوات وإرسال إشعار العودة تلقائياً.')
                 .setTimestamp();
 
-            await interaction.editReply({ embeds: [embed] });
+            await interaction.editReply({ embeds: [replyEmbed] });
 
         } catch (error) {
             console.error(error);
-            await interaction.editReply({ content: 'حدث خطأ أثناء تطبيق وضع الصيانة!' });
+            await interaction.editReply({ content: 'حدث خطأ أثناء تنفيذ الأمر! تأكد من صلاحيات البوت وID القناة.' });
         }
     }
 });
