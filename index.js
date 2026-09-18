@@ -1,10 +1,23 @@
 const { Client, GatewayIntentBits, SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, REST, Routes } = require('discord.js');
+const express = require('express');
 
+// إعداد خادم الويب (مطلوب لكي لا يغلق Render خدمة Web Service)
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.get('/', (req, res) => {
+    res.send('Bot is running and alive!');
+});
+
+app.listen(PORT, () => {
+    console.log(`Web server is running on port ${PORT}`);
+});
+
+// إعداد بوت الديسكورد
 const client = new Client({
     intents: [GatewayIntentBits.Guilds]
 });
 
-// عند تشغيل البوت وتسجيل الأمر
 client.once('ready', async () => {
     console.log(`Logged in as ${client.user.tag}!`);
 
@@ -38,7 +51,6 @@ client.once('ready', async () => {
     }
 });
 
-// تنفيذ الأمر عند استخدامه
 client.on('interactionCreate', async interaction => {
     if (!interaction.isChatInputCommand()) return;
 
@@ -83,5 +95,4 @@ client.on('interactionCreate', async interaction => {
     }
 });
 
-// تشغيل البوت باستخدام التوكن المخفي في ريندر
 client.login(process.env.TOKEN);
