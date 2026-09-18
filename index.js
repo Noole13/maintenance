@@ -31,8 +31,8 @@ client.once('clientReady', async () => {
                     .setDescription('اختر الحالة')
                     .setRequired(true)
                     .addChoices(
-                        { name: 'تشغيل (إخفاء السيرفر وإشعار الصيانة)', value: 'on' },
-                        { name: 'إيقاف (إعادة القنوات وإشعار العودة)', value: 'off' }
+                        { name: 'تشغيل الصيانة (قفل القنوات العامة وإشعار الصيانة)', value: 'on' },
+                        { name: 'إيقاف الصيانة (فتح القنوات وإشعار العودة)', value: 'off' }
                     )
             )
             .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
@@ -68,7 +68,7 @@ client.on('interactionCreate', async interaction => {
             for (const [id, channel] of channels) {
                 if (!channel || channel.type === ChannelType.GuildCategory) continue;
 
-                // استثناء قناة الصيانة المخصصة
+                // 1. استثناء قناة الصيانة
                 if (channel.id === MAINTENANCE_CHANNEL_ID) {
                     try {
                         if (action === 'on') {
@@ -88,20 +88,20 @@ client.on('interactionCreate', async interaction => {
                     continue;
                 }
 
-                // التحقق مما إذا كانت القناة مخفية مسبقاً (للإدارة)
-                const everyoneOverwrite = channel.permissionOverwrites.cache.get(everyoneRole.id);
-                const currentDenyView = everyoneOverwrite ? everyoneOverwrite.deny.has(PermissionFlagsBits.ViewChannel) : false;
-
-                if (currentDenyView) {
-                    continue; // تخطي القنوات الإدارية المغلقة تماماً
+                // 2. استثناء تام لأي قناة تابعة لتصنيف "الإدارة"
+                const parentCategory = channel.parent;
+                if (parentCategory && (parentCategory.name.includes('الإدارة') || parentCategory.name.includes('ادارة') || parentCategory.name.includes('admin'))) {
+                    continue; 
                 }
 
                 try {
                     if (action === 'on') {
+                        // عند التشغيل: نقفل الكتابة فقط (SendMessages: false) ونتركها ظاهرة لكي لا تختفي تماماً وتسبب مشاكل
                         await channel.permissionOverwrites.edit(everyoneRole, {
-                            ViewChannel: false
+                            SendMessages: false
                         });
                     } else {
+                        // عند الإيقاف: نعيد كل شيء للافتراضي تماماً (نفتح الكتابة والرؤية)
                         await channel.permissionOverwrites.edit(everyoneRole, {
                             ViewChannel: null,
                             SendMessages: null
@@ -112,7 +112,7 @@ client.on('interactionCreate', async interaction => {
                 }
             }
 
-            // إرسال رسائل الإيمبد بالشعار في قناة الصيانة
+            // إرسال رسائل الإيمبد في قناة الصيانة
             if (targetChannel) {
                 if (action === 'on') {
                     const maintenanceEmbed = new EmbedBuilder()
@@ -121,7 +121,7 @@ client.on('interactionCreate', async interaction => {
                         .setDescription(
                             '**عزيزي العضو،**\n\n' +
                             'نعمل حالياً على إجراء أعمال صيانة وتحديثات شاملة للسيرفر لتقديم أفضل تجربة.\n' +
-                            'تم إخفاء القنوات مؤقتاً، وستتم إعادتها فور الانتهاء.\n\n' +
+                            'تم إيقاف الكتابة في القنوات مؤقتاً لحين الانتهاء.\n\n' +
                             '_شكراً لصبركم وتفهمكم._'
                         )
                         .setThumbnail(SERVER_LOGO_URL)
@@ -151,7 +151,7 @@ client.on('interactionCreate', async interaction => {
             const replyEmbed = new EmbedBuilder()
                 .setColor(action === 'on' ? '#FF0000' : '#00FF00')
                 .setTitle(action === 'on' ? '🛠️ تم تفعيل وضع الصيانة بنجاح' : '✅ تم إيقاف وضع الصيانة')
-                .setDescription(action === 'on' ? 'تم إخفاء القنوات العامة والحفاظ على أمان القنوات الإدارية.' : 'تمت إعادة القنوات العامة لطبيعتها.')
+                .setDescription(action === 'on' ? 'تم قفل القنوات العامة وحماية قسم الإدارة.' : 'تمت إعادة فتح جميع القنوات العامة بنجاح.')
                 .setTimestamp();
 
             await interaction.editReply({ embeds: [replyEmbed] });
