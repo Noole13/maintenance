@@ -88,24 +88,20 @@ client.on('interactionCreate', async interaction => {
                     continue;
                 }
 
-                // التحقق من صلاحيات رتبة Everyone الحالية للقناة
+                // التحقق مما إذا كانت القناة مخفية مسبقاً (للإدارة)
                 const everyoneOverwrite = channel.permissionOverwrites.cache.get(everyoneRole.id);
-                const currentViewChannel = everyoneOverwrite ? everyoneOverwrite.allow.has(PermissionFlagsBits.ViewChannel) : true;
                 const currentDenyView = everyoneOverwrite ? everyoneOverwrite.deny.has(PermissionFlagsBits.ViewChannel) : false;
 
-                // إذا كانت القناة مغلقة تماماً مسبقاً (مخفية عن الجميع كالإدارة)، نتجاهلها تماماً ولا نعدلها
                 if (currentDenyView) {
-                    continue; 
+                    continue; // تخطي القنوات الإدارية المغلقة تماماً
                 }
 
                 try {
                     if (action === 'on') {
-                        // إخفاء القنوات العامة فقط
                         await channel.permissionOverwrites.edit(everyoneRole, {
                             ViewChannel: false
                         });
                     } else {
-                        // إرجاع القنوات العامة لوضعها الطبيعي
                         await channel.permissionOverwrites.edit(everyoneRole, {
                             ViewChannel: null,
                             SendMessages: null
@@ -116,7 +112,7 @@ client.on('interactionCreate', async interaction => {
                 }
             }
 
-            // إرسال رسائل الإيمبد بالشعار الرسمي في قناة الصيانة
+            // إرسال رسائل الإيمبد بالشعار في قناة الصيانة
             if (targetChannel) {
                 if (action === 'on') {
                     const maintenanceEmbed = new EmbedBuilder()
@@ -158,7 +154,7 @@ client.on('interactionCreate', async interaction => {
                 .setDescription(action === 'on' ? 'تم إخفاء القنوات العامة والحفاظ على أمان القنوات الإدارية.' : 'تمت إعادة القنوات العامة لطبيعتها.')
                 .setTimestamp();
 
-            await interaction.editReply({ embeds: `[${replyEmbed}]` }); // Fixed template string syntax internally
+            await interaction.editReply({ embeds: [replyEmbed] });
 
         } catch (error) {
             console.error(error);
