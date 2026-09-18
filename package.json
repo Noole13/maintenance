@@ -1,0 +1,12 @@
+{
+  "name": "3rb-bot",
+  "version": "1.0.0",
+  "description": "Discord Maintenance Bot",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.14.1"
+  }
+}
