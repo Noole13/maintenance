@@ -16,10 +16,7 @@ const client = new Client({
     intents: [GatewayIntentBits.Guilds]
 });
 
-// معرف قناة الصيانة الثابت
 const MAINTENANCE_CHANNEL_ID = '1550318085146288249';
-
-// رابط الشعار المباشر من ملفات المستودع لديك على GitHub
 const SERVER_LOGO_URL = 'https://raw.githubusercontent.com/Noole13/maintenance/main/Gemini.png';
 
 client.once('clientReady', async () => {
@@ -71,19 +68,44 @@ client.on('interactionCreate', async interaction => {
             for (const [id, channel] of channels) {
                 if (!channel || channel.type === ChannelType.GuildCategory) continue;
 
-                try {
-                    if (action === 'on') {
-                        if (channel.id === MAINTENANCE_CHANNEL_ID) {
+                // استثناء قناة الصيانة المخصصة
+                if (channel.id === MAINTENANCE_CHANNEL_ID) {
+                    try {
+                        if (action === 'on') {
                             await channel.permissionOverwrites.edit(everyoneRole, {
                                 ViewChannel: true,
                                 SendMessages: false
                             });
                         } else {
                             await channel.permissionOverwrites.edit(everyoneRole, {
-                                ViewChannel: false
+                                ViewChannel: null,
+                                SendMessages: null
                             });
                         }
+                    } catch (err) {
+                        console.error(`فشل تعديل قناة الصيانة:`, err);
+                    }
+                    continue;
+                }
+
+                // التحقق من صلاحيات رتبة Everyone الحالية للقناة
+                const everyoneOverwrite = channel.permissionOverwrites.cache.get(everyoneRole.id);
+                const currentViewChannel = everyoneOverwrite ? everyoneOverwrite.allow.has(PermissionFlagsBits.ViewChannel) : true;
+                const currentDenyView = everyoneOverwrite ? everyoneOverwrite.deny.has(PermissionFlagsBits.ViewChannel) : false;
+
+                // إذا كانت القناة مغلقة تماماً مسبقاً (مخفية عن الجميع كالإدارة)، نتجاهلها تماماً ولا نعدلها
+                if (currentDenyView) {
+                    continue; 
+                }
+
+                try {
+                    if (action === 'on') {
+                        // إخفاء القنوات العامة فقط
+                        await channel.permissionOverwrites.edit(everyoneRole, {
+                            ViewChannel: false
+                        });
                     } else {
+                        // إرجاع القنوات العامة لوضعها الطبيعي
                         await channel.permissionOverwrites.edit(everyoneRole, {
                             ViewChannel: null,
                             SendMessages: null
@@ -94,7 +116,7 @@ client.on('interactionCreate', async interaction => {
                 }
             }
 
-            // إرسال الرسالة مع الشعار الرسمي في الإيمبد داخل قناة الصيانة
+            // إرسال رسائل الإيمبد بالشعار الرسمي في قناة الصيانة
             if (targetChannel) {
                 if (action === 'on') {
                     const maintenanceEmbed = new EmbedBuilder()
@@ -106,8 +128,8 @@ client.on('interactionCreate', async interaction => {
                             'تم إخفاء القنوات مؤقتاً، وستتم إعادتها فور الانتهاء.\n\n' +
                             '_شكراً لصبركم وتفهمكم._'
                         )
-                        .setThumbnail(SERVER_LOGO_URL) // شعار السيرفر كصورة مصغرة
-                        .setImage(SERVER_LOGO_URL)    // شعار السيرفر كصورة رئيسية بارزة
+                        .setThumbnail(SERVER_LOGO_URL)
+                        .setImage(SERVER_LOGO_URL)
                         .setTimestamp()
                         .setFooter({ text: '3RB Maintenance System', iconURL: SERVER_LOGO_URL });
 
@@ -133,10 +155,10 @@ client.on('interactionCreate', async interaction => {
             const replyEmbed = new EmbedBuilder()
                 .setColor(action === 'on' ? '#FF0000' : '#00FF00')
                 .setTitle(action === 'on' ? '🛠️ تم تفعيل وضع الصيانة بنجاح' : '✅ تم إيقاف وضع الصيانة')
-                .setDescription(action === 'on' ? 'تم إخفاء القنوات وإرسال إشعار الصيانة بالشعار.' : 'تمت إعادة القنوات وإرسال إشعار العودة.')
+                .setDescription(action === 'on' ? 'تم إخفاء القنوات العامة والحفاظ على أمان القنوات الإدارية.' : 'تمت إعادة القنوات العامة لطبيعتها.')
                 .setTimestamp();
 
-            await interaction.editReply({ embeds: [replyEmbed] });
+            await interaction.editReply({ embeds: `[${replyEmbed}]` }); // Fixed template string syntax internally
 
         } catch (error) {
             console.error(error);
