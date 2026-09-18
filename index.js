@@ -1,24 +1,23 @@
 const { Client, GatewayIntentBits, SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, REST, Routes } = require('discord.js');
 const express = require('express');
 
-// إعداد خادم الويب لتجاوز مشكلة البورت في Render
+// 1. خادم الويب (مطلوب لكي ترصد منصة Render البورت وتعتبر الخدمة شغالة)
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000;
 
 app.get('/', (req, res) => {
-    res.send('Bot is active and running!');
+    res.send('Discord Maintenance Bot is online and active!');
 });
 
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`Web server is running and listening on port ${PORT}`);
 });
 
-// إعداد بوت الديسكورد
+// 2. إعداد بوت الديسكورد
 const client = new Client({
     intents: [GatewayIntentBits.Guilds]
 });
 
-// استخدام حدث clientReady لتفادي التحذير
 client.once('clientReady', async () => {
     console.log(`Logged in as ${client.user.tag}!`);
 
