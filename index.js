@@ -1,16 +1,16 @@
 const { Client, GatewayIntentBits, SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, REST, Routes } = require('discord.js');
 const express = require('express');
 
-// إعداد خادم الويب (مطلوب لكي لا يغلق Render خدمة Web Service)
+// إعداد خادم الويب لتجاوز مشكلة البورت في Render
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.get('/', (req, res) => {
-    res.send('Bot is running and alive!');
+    res.send('Bot is active and running!');
 });
 
-app.listen(PORT, () => {
-    console.log(`Web server is running on port ${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Web server is running and listening on port ${PORT}`);
 });
 
 // إعداد بوت الديسكورد
@@ -18,7 +18,8 @@ const client = new Client({
     intents: [GatewayIntentBits.Guilds]
 });
 
-client.once('ready', async () => {
+// استخدام حدث clientReady لتفادي التحذير
+client.once('clientReady', async () => {
     console.log(`Logged in as ${client.user.tag}!`);
 
     const commands = [
@@ -56,7 +57,7 @@ client.on('interactionCreate', async interaction => {
 
     if (interaction.commandName === 'maintenance') {
         await interaction.deferReply({ ephemeral: true });
-
+        
         const action = interaction.options.getString('action');
         const guild = interaction.guild;
         const everyoneRole = guild.roles.everyone;
