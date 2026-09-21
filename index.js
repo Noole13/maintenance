@@ -31,8 +31,8 @@ client.once('clientReady', async () => {
                     .setDescription('اختر الحالة')
                     .setRequired(true)
                     .addChoices(
-                        { name: 'تشغيل الصيانة (إخفاء القنوات وإبقاء التذاكر والصيانة)', value: 'on' },
-                        { name: 'إيقاف الصيانة (إعادة إظهار القنوات والخدمات)', value: 'off' }
+                        { name: 'تشغيل الصيانة', value: 'on' },
+                        { name: 'إيقاف الصيانة', value: 'off' }
                     )
             )
             .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
@@ -68,7 +68,7 @@ client.on('interactionCreate', async interaction => {
             for (const [id, channel] of channels) {
                 if (!channel || channel.type === ChannelType.GuildCategory) continue;
 
-                // 1. استثناء قناة أو قسم الصيانة ليظل ظاهراً
+                // 1. استثناء قناة الصيانة وحدها لتظل ظاهرة
                 if (channel.id === MAINTENANCE_CHANNEL_ID) {
                     try {
                         if (action === 'on') {
@@ -88,45 +88,21 @@ client.on('interactionCreate', async interaction => {
                     continue;
                 }
 
-                // 2. استثناء قسم التذاكر (Tickets) لتظل ظاهرة ومتاحة
+                // 2. استثناء تام لأي قناة تابعة لتصنيف "الإدارة"
                 const parentCategory = channel.parent;
-                const isTicket = (parentCategory && (parentCategory.name.toLowerCase().includes('ticket') || parentCategory.name.includes('تذكرة') || parentCategory.name.includes('تذاكر'))) ||
-                                 channel.name.toLowerCase().includes('ticket') || channel.name.includes('تذكرة');
-                
-                if (isTicket) {
-                    try {
-                        if (action === 'on') {
-                            // التذاكر تظل مرئية ومتاحة للكتابة لكي يتمكن الأعضاء من التواصل أثناء الصيانة
-                            await channel.permissionOverwrites.edit(everyoneRole, {
-                                ViewChannel: true,
-                                SendMessages: true
-                            });
-                        } else {
-                            await channel.permissionOverwrites.edit(everyoneRole, {
-                                ViewChannel: null,
-                                SendMessages: null
-                            });
-                        }
-                    } catch (err) {
-                        console.error(`فشل تعديل قناة التذاكر ${channel.name}:`, err);
-                    }
-                    continue;
-                }
-
-                // 3. استثناء تام لأي قناة تابعة لتصنيف "الإدارة"
                 if (parentCategory && (parentCategory.name.includes('الإدارة') || parentCategory.name.includes('ادارة') || parentCategory.name.includes('admin'))) {
                     continue; 
                 }
 
                 try {
                     if (action === 'on') {
-                        // عند التشغيل: إخفاء القناة تماماً ومنع الكتابة
+                        // عند التشغيل: إخفاء القناة تماماً عن الجميع
                         await channel.permissionOverwrites.edit(everyoneRole, {
                             ViewChannel: false,
                             SendMessages: false
                         });
                     } else {
-                        // عند الإيقاف: إعادة كل شيء للافتراضي تماماً (فتح الرؤية والكتابة)
+                        // عند الإيقاف: إعادة الصلاحيات للوضع الافتراضي
                         await channel.permissionOverwrites.edit(everyoneRole, {
                             ViewChannel: null,
                             SendMessages: null
@@ -137,7 +113,7 @@ client.on('interactionCreate', async interaction => {
                 }
             }
 
-            // إرسال رسائل الإيمبد في قناة الصيانة
+            // إرسال رسائل الإيمبد المحفزة في قناة الصيانة
             if (targetChannel) {
                 if (action === 'on') {
                     const maintenanceEmbed = new EmbedBuilder()
@@ -145,9 +121,9 @@ client.on('interactionCreate', async interaction => {
                         .setTitle('🛠️ سيرفر [ 3RB ] تحت الصيانة حالياً')
                         .setDescription(
                             '**عزيزي العضو،**\n\n' +
-                            'نعمل حالياً على إجراء أعمال صيانة وتحديثات شاملة للسيرفر لتقديم أفضل تجربة.\n' +
-                            'تم إخفاء القنوات العامة مؤقتاً، وتبقى تذاكر الدعم الفني وقناة الصيانة متاحة لكم.\n\n' +
-                            '_شكراً لصبركم وتفهمكم._'
+                            'نعمل حالياً على تطوير وتحسين السيرفر لنقدم لكم تجربة استثنائية وفريدة تليق بكم.\n' +
+                            'ترقبوا المفاجآت والتحسينات القادمة قريباً جداً!\n\n' +
+                            '_شكراً لصبركم ودعمكم المستمر._'
                         )
                         .setThumbnail(SERVER_LOGO_URL)
                         .setImage(SERVER_LOGO_URL)
@@ -161,8 +137,7 @@ client.on('interactionCreate', async interaction => {
                         .setTitle('✅ انتهت أعمال الصيانة في سيرفر [ 3RB ]')
                         .setDescription(
                             '**يسعدنا إعلامكم أنه تم الانتهاء من الصيانة بنجاح!** 🎉\n\n' +
-                            'تمت إعادة جميع القنوات والخدمات للعمل بشكل طبيعي.\n' +
-                            'نتمنى لكم وقتاً ممتعاً في السيرفر.'
+                            'نورتوا السيرفر من جديد، ونتمنى لكم أوقاتاً ممتعة مليئة بالحماس والمتعة.'
                         )
                         .setThumbnail(SERVER_LOGO_URL)
                         .setImage(SERVER_LOGO_URL)
@@ -176,7 +151,7 @@ client.on('interactionCreate', async interaction => {
             const replyEmbed = new EmbedBuilder()
                 .setColor(action === 'on' ? '#FF0000' : '#00FF00')
                 .setTitle(action === 'on' ? '🛠️ تم تفعيل وضع الصيانة بنجاح' : '✅ تم إيقاف وضع الصيانة')
-                .setDescription(action === 'on' ? 'تم إخفاء القنوات العامة وإبقاء تذاكر الدعم وقناة الصيانة فقط.' : 'تمت إعادة إظهار جميع القنوات العامة بنجاح.')
+                .setDescription(action === 'on' ? 'تم تفعيل وضع الصيانة وإخفاء القنوات بنجاح.' : 'تمت إعادة فتح السيرفر وعودة الأقسام للعمل.')
                 .setTimestamp();
 
             await interaction.editReply({ embeds: [replyEmbed] });
