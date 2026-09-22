@@ -17,7 +17,7 @@ const client = new Client({
 });
 
 const MAINTENANCE_CHANNEL_ID = '1550318085146288249';
-const SERVER_LOGO_URL = 'https://raw.githubusercontent.com/Noole13/maintenance/main/Gemini.png';
+const SERVER_LOGO_URL = 'https://raw.githubusercontent.com/Noole13/maintenance/main/Gemini.png.png';
 
 client.once('clientReady', async () => {
     console.log(`Logged in as ${client.user.tag}!`);
