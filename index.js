@@ -118,7 +118,7 @@ client.on('interactionCreate', async interaction => {
                 if (action === 'on') {
                     const maintenanceEmbed = new EmbedBuilder()
                         .setColor('#FFCC00')
-                        .setTitle('🛠️ سيرفر [ 3RB ] تحت الصيانة حالياً')
+                        .setTitle('🛠️ سيرفر [ PULSE ] تحت الصيانة حالياً')
                         .setDescription(
                             '**عزيزي العضو،**\n\n' +
                             'نعمل حالياً على تطوير وتحسين السيرفر لنقدم لكم تجربة استثنائية وفريدة تليق بكم.\n' +
@@ -134,7 +134,7 @@ client.on('interactionCreate', async interaction => {
                 } else {
                     const backEmbed = new EmbedBuilder()
                         .setColor('#00FF00')
-                        .setTitle('✅ انتهت أعمال الصيانة في سيرفر [ 3RB ]')
+                        .setTitle('✅ انتهت أعمال الصيانة في سيرفر [ PULSE ]')
                         .setDescription(
                             '**يسعدنا إعلامكم أنه تم الانتهاء من الصيانة بنجاح!** 🎉\n\n' +
                             'نورتوا السيرفر من جديد، ونتمنى لكم أوقاتاً ممتعة مليئة بالحماس والمتعة.'
